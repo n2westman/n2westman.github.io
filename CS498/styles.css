@@ -53,6 +53,11 @@ footer p {
   transition: 1s height ease-in-out;
 }
 
+.data-point {
+  opacity: 1.0;
+  transition: .5s opacity ease-in-out;
+}
+
 text {
   font-size: 0.6em;
 }

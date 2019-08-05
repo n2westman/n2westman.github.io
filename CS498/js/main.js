@@ -369,7 +369,7 @@ const setStateTwoText = () => {
 
 const setStateThreeText = () => {
   $('#text').html(
-      "Zooming in closer, we can see the end of the steroids era in comparison to the most recent decade. It looks like home run numbers are returning to that of before recent bans, so maybe the ball is 'juiced,' or maybe steroids are coming back.");
+      "Zooming in closer, we can see the end of the steroids era in comparison to the most recent decade. It looks like there was a slight decline in home runs in the mid 2010's, but otherwise flat. Maybe pitchers are suffering from recency bias!");
 };
 
 const adjustHeight = () => {
@@ -420,6 +420,7 @@ $(document).ready(() => {
     } else if (state == 3) {
       thirdToSecond(await dataPromise);
       $('#prev_button').removeClass('disabled');
+      $('#next_button').removeClass('disabled');
       setStateTwoText();
       adjustHeight();
       state = 2;

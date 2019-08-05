@@ -70,6 +70,12 @@ const initFirstGraph = function(data) {
   var yScale = d3.scaleLinear([ yMin, yMax ], [ naturalHeight, 0 ]);
   var yMap = function(d) { return yScale(yValue(d)); };
 
+  // Define the div for the tooltip
+  var div = d3.select("body")
+                .append("div")
+                .attr("class", "tooltip bs-tooltip-top")
+                .style("opacity", 0);
+
   svg.append('g')
       .attr('transform', `translate(${margin},${margin})`)
       .selectAll('circle')
@@ -78,7 +84,16 @@ const initFirstGraph = function(data) {
       .append('circle')
       .attr('cx', xMap)
       .attr('cy', yMap)
-      .attr('r', 2);
+      .attr('r', 2)
+      .on("mouseover",
+          function(d) {
+            div.transition().duration(200).style("opacity", .9);
+            div.html(d.name + "<br/>" + d.HR)
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+          })
+      .on("mouseout",
+          function(d) { div.transition().duration(500).style("opacity", 0); });
 
   svg.append('g')
       .attr('transform', `translate(${margin},${margin})`)

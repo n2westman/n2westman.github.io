@@ -56,3 +56,23 @@ footer p {
 text {
   font-size: 0.6em;
 }
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: grey;
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+}
+
+div.tooltip {
+    position: absolute;
+    text-align: center;
+    font-size: 0.6em;
+    color: white;
+    padding: 2px;
+    background-color: #E8336D;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
+}

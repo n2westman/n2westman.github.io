@@ -52,3 +52,7 @@ footer p {
   overflow: hidden;
   transition: 1s height ease-in-out;
 }
+
+text {
+  font-size: 0.6em;
+}

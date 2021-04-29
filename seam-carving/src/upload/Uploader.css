@@ -1,0 +1,17 @@
+.Uploader {
+  margin: 4vmin;
+  padding: 4vmin;
+  height: 40vmin;
+  width: 40vmin;
+
+  align-self: center;
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+  font-size: 16px;
+  background-color: lightslategray;
+  border-radius: 4vmin;
+}

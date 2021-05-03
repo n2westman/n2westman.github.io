@@ -15,3 +15,10 @@
   background-color: lightslategray;
   border-radius: 4vmin;
 }
+
+.il {
+  display: inline-block;
+}
+h4 {
+  margin-bottom: 5px;
+}

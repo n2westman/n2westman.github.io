@@ -41,6 +41,10 @@ class Uploader extends React.Component {
             <h4>Vertical Seam</h4>
             <canvas id="verticalSeam"></canvas>
           </div>
+          <div className="il">
+            <h4>Energy</h4>
+            <canvas id="energy"></canvas>
+          </div>
         </div>
         <p>
           Processing took <span id="duration"></span>ms

@@ -15,6 +15,25 @@ function addSeamVertical(img, seam) {
   return nj.array(toRet);
 }
 
+function addSeamToMap(img, seam) {
+  for (let r = 0; r < img.shape[0]; r++) {
+    img.set(r, seam.get(r), 255);
+  }
+  return img;
+
+}
+
+function removeSeamVertical(img, seam) {
+  const toRet = [];
+  const unrolled = img.tolist();
+
+  for (let r = 0; r < img.shape[0]; r++) {
+    toRet.push(unrolled[r]);
+    toRet[r].splice(seam.get(r), 1);
+  }
+  return nj.array(toRet);
+}
+
 function addSeamHorizontal(img, seam) {
   return addSeamVertical(img.transpose(1, 0), seam).transpose(1, 0);
 }
@@ -74,7 +93,7 @@ const doBacktrackCalculation = cwise({
     { offset: [-1, -1], array: 1 },
     { offset: [0, -1], array: 1 },
     { offset: [1, -1], array: 1 },
-    "index"
+    "index",
   ],
   body: function backtrackCwise(backtrack, energy, jNW, jN, jNE, index) {
     const min = Math.min(jNW, jN, jNE);
@@ -89,7 +108,7 @@ function getEnergy(img) {
   var h = img.shape[0];
   var w = img.shape[1];
   var oShape = [h, w];
-  var out = new nj.NdArray(new Uint8Array(h * w), oShape);
+  var out = new nj.NdArray(new Uint16Array(h * w), oShape);
   var r = img.selection.pick(null, null, 0);
   var g = img.selection.pick(null, null, 1);
   var b = img.selection.pick(null, null, 2);
@@ -108,14 +127,14 @@ function getMinimumSeam(energy) {
 
   for (let i = 1; i < h; i++) {
     for (let j = 0; j < w; j++) {
-      let e = energy.get(i-1, j);
+      let e = energy.get(i - 1, j);
       let o = 0;
-      if (e > energy.get(i-1, j-1)) {
-        e = energy.get(i-1, j-1);
+      if (j > 0 && e > energy.get(i - 1, j - 1)) {
+        e = energy.get(i - 1, j - 1);
         o = -1;
       }
-      if (e > energy.get(i-1, j+1)) {
-        e = energy.get(i-1, j+1);
+      if (j < w -1 && e > energy.get(i - 1, j + 1)) {
+        e = energy.get(i - 1, j + 1);
         o = 1;
       }
       backtrack.set(i, j, j + o);
@@ -178,18 +197,32 @@ function populateImage($image) {
   // $verticalSeam.height = H + 1;
   // nj.images.save(withVertical, $verticalSeam);
 
-  const energyMap = getEnergy(img);
-  const $energy = document.getElementById("energy");
-  $energy.width = energyMap.shape[1];
-  $energy.height = energyMap.shape[0];
-  nj.images.save(energyMap, $energy);
+  let processing = img;
+  var timesRun = 0;
+  var interval = setInterval(function () {
+    timesRun += 1;
+    if (timesRun === 50){
+        clearInterval(interval);
+    }
 
-  const seam = getMinimumSeam(energyMap);
-  const withSeam = addSeamVertical(img, seam);
-  const $seam = document.getElementById("seam");
-  $seam.width = withSeam.shape[1];
-  $seam.height = withSeam.shape[0];
-  nj.images.save(withSeam, $seam);
+    const energyMap = getEnergy(processing);
+    const seam = getMinimumSeam(energyMap.clone());
+    
+    const energyWithSeam = addSeamToMap(energyMap, seam);
+    const $energy = document.getElementById("energy");
+    $energy.width = energyWithSeam.shape[1];
+    $energy.height = energyWithSeam.shape[0];
+    nj.images.save(energyWithSeam, $energy);
+
+
+    const withoutSeam = removeSeamVertical(processing, seam);
+    const $seam = document.getElementById("seam");
+    $seam.width = withoutSeam.shape[1];
+    $seam.height = withoutSeam.shape[0];
+    nj.images.save(withoutSeam, $seam);
+
+    processing = withoutSeam;
+  }, 100);
 
   const duration = new Date().valueOf() - start;
   document.getElementById("duration").textContent = "" + duration;

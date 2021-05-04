@@ -4,11 +4,12 @@ import loadImage from "./loadImage";
 import React from "react";
 
 class Uploader extends React.Component {
-  handleFileSelect(e) {
-    var file = e.target.files[0];
-    var reader = new FileReader();
 
-    reader.onload = function (e) {
+  handleFileSelect(e) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
       loadImage(e.target.result);
     };
     reader.readAsDataURL(file);
@@ -34,16 +35,12 @@ class Uploader extends React.Component {
         </div>
         <div>
           <div className="il">
-            <h4>Horizontal Seam</h4>
-            <canvas id="horizontalSeam"></canvas>
-          </div>
-          <div className="il">
-            <h4>Vertical Seam</h4>
-            <canvas id="verticalSeam"></canvas>
-          </div>
-          <div className="il">
             <h4>Energy</h4>
             <canvas id="energy"></canvas>
+          </div>
+          <div className="il">
+            <h4>Seam</h4>
+            <canvas id="seam"></canvas>
           </div>
         </div>
         <p>

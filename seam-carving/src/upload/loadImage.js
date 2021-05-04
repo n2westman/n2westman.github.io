@@ -1,6 +1,7 @@
 // From https://jsfiddle.net/nicolaspanel/047gwg0q/
 import nj from "numjs";
 import cwise from "cwise";
+import { argmin } from "ndarray-ops";
 
 function addSeamVertical(img, seam) {
   const toRet = [];
@@ -29,6 +30,7 @@ function rollHorizontal(img, amount) {
   return rollVertical(img.transpose(1, 0), amount).transpose(1, 0);
 }
 
+// sqrt(sum(xgrad .^ 2, ygrad .^ 2))
 const doEnergyCalculation = cwise({
   args: [
     "array",
@@ -42,7 +44,18 @@ const doEnergyCalculation = cwise({
     { offset: [1, 0], array: 2 },
     { offset: [1, 0], array: 3 },
   ],
-  body: function rgb2grayCwise(y, xR, xG, xB, xRN, xGN, xBN, xRE, xGE, xBE) {
+  body: function energyCalculationCwise(
+    y,
+    xR,
+    xG,
+    xB,
+    xRN,
+    xGN,
+    xBN,
+    xRE,
+    xGE,
+    xBE
+  ) {
     y = Math.sqrt(
       (xR - xRN) * (xR - xRN) +
         (xR - xRE) * (xR - xRE) +
@@ -51,6 +64,24 @@ const doEnergyCalculation = cwise({
         (xB - xBN) * (xB - xBN) +
         (xB - xBE) * (xB - xBN)
     );
+  },
+});
+
+const doBacktrackCalculation = cwise({
+  args: [
+    "array",
+    "array",
+    { offset: [-1, -1], array: 1 },
+    { offset: [0, -1], array: 1 },
+    { offset: [1, -1], array: 1 },
+    "index"
+  ],
+  body: function backtrackCwise(backtrack, energy, jNW, jN, jNE, index) {
+    const min = Math.min(jNW, jN, jNE);
+    energy += min;
+    const offset = jNW === min ? -1 : jN === min ? 0 : 1;
+    const idx = index[1] + offset;
+    backtrack = idx < 0 ? 0 : idx;
   },
 });
 
@@ -64,6 +95,43 @@ function getEnergy(img) {
   var b = img.selection.pick(null, null, 2);
   doEnergyCalculation(out.selection, r, g, b);
   return out;
+}
+
+function getMinimumSeam(energy) {
+  const backtrack = nj.zeros(energy.shape);
+  const h = energy.shape[0];
+  const w = energy.shape[1];
+
+  // idx = np.argmin(M[i - 1, j-1:j + 2])
+  // backtrack[i, j] = idx + j
+  // min_energy = M[i-1, idx + j]
+
+  for (let i = 1; i < h; i++) {
+    for (let j = 0; j < w; j++) {
+      let e = energy.get(i-1, j);
+      let o = 0;
+      if (e > energy.get(i-1, j-1)) {
+        e = energy.get(i-1, j-1);
+        o = -1;
+      }
+      if (e > energy.get(i-1, j+1)) {
+        e = energy.get(i-1, j+1);
+        o = 1;
+      }
+      backtrack.set(i, j, j + o);
+      energy.set(i, j, energy.get(i, j) + e);
+    }
+  }
+
+  const seam = [];
+  let j = argmin(energy.slice(-1).flatten().selection);
+
+  for (let i = h - 1; i > -1; i--) {
+    seam.unshift(j);
+    j = backtrack.get(i, j);
+  }
+
+  return nj.array(seam);
 }
 
 // TODO(nwestman): Implement improved seam carving https://github.com/axu2/improved-seam-carving
@@ -84,37 +152,44 @@ function populateImage($image) {
 
   // display images in canvas
   var $original = document.getElementById("original");
-  $original.width = W;
-  $original.height = H;
+  $original.width = img.shape[1];
+  $original.height = img.shape[0];
   nj.images.save(img, $original);
 
-  const diff = nj.cos(nj.arange(H).multiply(3.14 / 180)).multiply(20);
-  const verticalSeam = nj
-    .ones(H)
-    .multiply(W / 2)
-    .add(diff);
-  const withHorizontal = addSeamVertical(img, verticalSeam);
-  const $horizontalSeam = document.getElementById("horizontalSeam");
-  $horizontalSeam.width = W + 1;
-  $horizontalSeam.height = H;
-  nj.images.save(withHorizontal, $horizontalSeam);
+  // const diff = nj.cos(nj.arange(H).multiply(3.14 / 180)).multiply(20);
+  // const verticalSeam = nj
+  //   .ones(H)
+  //   .multiply(W / 2)
+  //   .add(diff);
+  // const withHorizontal = addSeamVertical(img, verticalSeam);
+  // const $horizontalSeam = document.getElementById("horizontalSeam");
+  // $horizontalSeam.width = W + 1;
+  // $horizontalSeam.height = H;
+  // nj.images.save(withHorizontal, $horizontalSeam);
 
-  const diff2 = nj.cos(nj.arange(W).multiply(3.14 / 180)).multiply(20);
-  const horizontalSeam = nj
-    .ones(W)
-    .multiply(H / 2)
-    .add(diff2);
-  const withVertical = addSeamHorizontal(img, horizontalSeam);
-  const $verticalSeam = document.getElementById("verticalSeam");
-  $verticalSeam.width = W;
-  $verticalSeam.height = H + 1;
-  nj.images.save(withVertical, $verticalSeam);
+  // const diff2 = nj.cos(nj.arange(W).multiply(3.14 / 180)).multiply(20);
+  // const horizontalSeam = nj
+  //   .ones(W)
+  //   .multiply(H / 2)
+  //   .add(diff2);
+  // const withVertical = addSeamHorizontal(img, horizontalSeam);
+  // const $verticalSeam = document.getElementById("verticalSeam");
+  // $verticalSeam.width = W;
+  // $verticalSeam.height = H + 1;
+  // nj.images.save(withVertical, $verticalSeam);
 
   const energyMap = getEnergy(img);
   const $energy = document.getElementById("energy");
-  $energy.width = W;
-  $energy.height = H + 1;
+  $energy.width = energyMap.shape[1];
+  $energy.height = energyMap.shape[0];
   nj.images.save(energyMap, $energy);
+
+  const seam = getMinimumSeam(energyMap);
+  const withSeam = addSeamVertical(img, seam);
+  const $seam = document.getElementById("seam");
+  $seam.width = withSeam.shape[1];
+  $seam.height = withSeam.shape[0];
+  nj.images.save(withSeam, $seam);
 
   const duration = new Date().valueOf() - start;
   document.getElementById("duration").textContent = "" + duration;

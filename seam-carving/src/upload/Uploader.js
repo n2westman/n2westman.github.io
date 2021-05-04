@@ -34,8 +34,12 @@ class Uploader extends React.Component {
         </div>
         <div>
           <div className="il">
-            <h4>With a bar</h4>
-            <canvas id="grayscale"></canvas>
+            <h4>Horizontal Seam</h4>
+            <canvas id="horizontalSeam"></canvas>
+          </div>
+          <div className="il">
+            <h4>Vertical Seam</h4>
+            <canvas id="verticalSeam"></canvas>
           </div>
         </div>
         <p>

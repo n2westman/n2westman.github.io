@@ -1,9 +1,7 @@
 // From https://jsfiddle.net/nicolaspanel/047gwg0q/
 import nj from "numjs";
 
-const size = 400;
-
-function addSeam(img) {
+function addSeamVertical(img) {
     const toRet = [];
     const unrolled = img.tolist();
     const midpoint = img.shape[1] / 2;
@@ -11,9 +9,13 @@ function addSeam(img) {
     
     for (let r = 0; r < img.shape[0]; r++) {
         toRet.push(unrolled[r]);
-        toRet[r].splice(midpoint, 4, blackPixel);
+        toRet[r].splice(midpoint, 0, blackPixel);
     }
     return nj.array(toRet);
+}
+
+function addSeamHorizontal(img) {
+    return addSeamVertical(img.transpose(1, 0)).transpose(1, 0);
 }
 
 function loadImage(src) {
@@ -21,6 +23,7 @@ function loadImage(src) {
   $image.crossOrigin = "Anonymous";
   $image.onload = function () {
     var W, H;
+    const size = Math.max($image.height, $image.width);
     if ($image.width < $image.height) {
       W = ~~((size * $image.width) / $image.height);
       H = ~~size;
@@ -38,14 +41,17 @@ function loadImage(src) {
     $original.height = H;
     nj.images.save(img, $original);
 
-    const altered = addSeam(img);
-    console.log(img.shape);
-    console.log(altered.shape);
+    const withHorizontal = addSeamVertical(img);
+    const $horizontalSeam = document.getElementById("horizontalSeam");
+    $horizontalSeam.width = W + 1;
+    $horizontalSeam.height = H;
+    nj.images.save(withHorizontal, $horizontalSeam);
 
-    const $gray = document.getElementById("grayscale");
-    $gray.width = W;
-    $gray.height = H;
-    nj.images.save(altered, $gray);
+    const withVertical = addSeamHorizontal(img);
+    const $verticalSeam = document.getElementById("verticalSeam");
+    $verticalSeam.width = W;
+    $verticalSeam.height = H + 1;
+    nj.images.save(withVertical, $verticalSeam);
 
     const duration = new Date().valueOf() - start;
     document.getElementById("duration").textContent = "" + duration;

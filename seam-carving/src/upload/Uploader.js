@@ -1,22 +1,46 @@
 import "./Uploader.css";
-import {loadImage, processImage} from "./loadImage";
+import { populateImage } from "./loadImage";
 
 import React from "react";
 
 class Uploader extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      image: null,
+      isButtonDisabled: true,
+    };
+  }
+
+  loadImage(src) {
+    const $image = new Image();
+    $image.crossOrigin = "Anonymous";
+    $image.onload = () => {
+      this.setState({
+        isButtonDisabled: false,
+        image: $image,
+      });
+    };
+    $image.src = src;
+  }
 
   handleFileSelect(e) {
     const file = e.target.files[0];
     const reader = new FileReader();
 
+    this.setState({
+      image: null,
+      isButtonDisabled: true,
+    });
+
     reader.onload = (e) => {
-      loadImage(e.target.result);
+      this.loadImage(e.target.result);
     };
     reader.readAsDataURL(file);
   }
 
   processImage(e) {
-
+    populateImage(this.state.image);
   }
 
   render() {
@@ -34,14 +58,18 @@ class Uploader extends React.Component {
           <div className="option">
             <label htmlFor="file">Image</label>
             <input
-              onChange={this.handleFileSelect}
+              onChange={(e) => this.handleFileSelect(e)}
               type="file"
               id="file"
               name="file"
             ></input>
           </div>
-          <button onClick={this.processImage} type="button">
-              Start
+          <button
+            onClick={(e) => this.processImage()}
+            type="button"
+            disabled={this.state.isButtonDisabled}
+          >
+            Start
           </button>
         </div>
 

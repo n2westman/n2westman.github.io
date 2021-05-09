@@ -30,15 +30,3 @@ export function populateImage($image) {
   document.getElementById("h").textContent = "" + img.shape[0];
   document.getElementById("w").textContent = "" + img.shape[1];
 }
-
-export function loadImage(src) {
-  const $image = new Image();
-  $image.crossOrigin = "Anonymous";
-  $image.onload = () => {
-    console.log("loaded");
-    populateImage($image);
-  }
-  $image.src = src;
-
-  return $image;
-}

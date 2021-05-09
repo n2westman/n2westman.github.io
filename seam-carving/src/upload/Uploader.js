@@ -1,5 +1,5 @@
 import "./Uploader.css";
-import loadImage from "./loadImage";
+import {loadImage, processImage} from "./loadImage";
 
 import React from "react";
 
@@ -15,16 +15,34 @@ class Uploader extends React.Component {
     reader.readAsDataURL(file);
   }
 
+  processImage(e) {
+
+  }
+
   render() {
     return (
       <>
         <div className="Uploader">
-          <input
-            onChange={this.handleFileSelect}
-            type="file"
-            id="file"
-            name="file"
-          ></input>
+          <div className="option">
+            <input type="checkbox" id="horizontal" name="horizontal"></input>
+            <label htmlFor="horizontal">Horizontal?</label>
+          </div>
+          <div className="option">
+            <input type="checkbox" id="addSeams" name="addSeams"></input>
+            <label htmlFor="addSeams">Add Seams?</label>
+          </div>
+          <div className="option">
+            <label htmlFor="file">Image</label>
+            <input
+              onChange={this.handleFileSelect}
+              type="file"
+              id="file"
+              name="file"
+            ></input>
+          </div>
+          <button onClick={this.processImage} type="button">
+              Start
+          </button>
         </div>
 
         <div>

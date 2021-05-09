@@ -20,11 +20,33 @@ function addSeamVertical(img, seam) {
   return nj.array(toRet);
 }
 
-function addSeamToMap(img, seam) {
+function addSeamHorizontal(img, seam) {
+  return addSeamVertical(img.transpose(1, 0), seam).transpose(1, 0);
+}
+
+function addSeam(img, seam, horizontal) {
+  if (horizontal) {
+    return addSeamHorizontal(img, seam);
+  }
+  return addSeamVertical(img, seam);
+}
+
+function addSeamToMapVertical(img, seam) {
   for (let r = 0; r < img.shape[0]; r++) {
     img.set(r, seam.get(r), 255);
   }
   return img;
+}
+
+function addSeamToMapHorizontal(img, seam) {
+  return addSeamToMapVertical(img.transpose(1, 0), seam).transpose(1, 0);
+}
+
+function addSeamToMap(img, seam, horizontal) {
+  if (horizontal) {
+    return addSeamToMapHorizontal(img, seam);
+  }
+  return addSeamToMapVertical(img, seam);
 }
 
 function removeSeamVertical(img, seam) {
@@ -38,19 +60,15 @@ function removeSeamVertical(img, seam) {
   return nj.array(toRet);
 }
 
-function addSeamHorizontal(img, seam) {
-  return addSeamVertical(img.transpose(1, 0), seam).transpose(1, 0);
+function removeSeamHorizontal(img, seam) {
+  return removeSeamVertical(img.transpose(1, 0), seam).transpose(1, 0);
 }
 
-function rollVertical(img, amount) {
-  const axis = 0;
-  const first = img.slice([0, amount]);
-  const second = img.slice([amount, img.shape[axis]]);
-  return nj.concatenate([second.flatten(), first.flatten()]).reshape(img.shape);
-}
-
-function rollHorizontal(img, amount) {
-  return rollVertical(img.transpose(1, 0), amount).transpose(1, 0);
+function removeSeam(img, seam, horizontal) {
+  if (horizontal) {
+    return removeSeamHorizontal(img, seam);
+  }
+  return removeSeamVertical(img, seam);
 }
 
 // sqrt(sum(xgrad .^ 2, ygrad .^ 2))
@@ -120,37 +138,10 @@ function getEnergy(img) {
   return out;
 }
 
-// function getForwardEnergy(img) {
-//   const grayImage = nj.images.rgb2gray(img);
-//   const h = grayImage.shape[0];
-//   const w = grayImage.shape[1];
-
-//   const U = rollVertical(grayImage, 1)
-//   const L = rollHorizontal(grayImage, 1).add(U);
-//   const R = rollHorizontal(grayImage, -1).add(U);
-
-//   for i in range(1, h):
-//         mU = m[i-1]
-//         mL = np.roll(mU, 1)
-//         mR = np.roll(mU, -1)
-
-//         mULR = np.array([mU, mL, mR])
-//         cULR = np.array([cU[i], cL[i], cR[i]])
-//         mULR += cULR
-
-//         argmins = np.argmin(mULR, axis=0)
-//         m[i] = np.choose(argmins, mULR)
-//         energy[i] = np.choose(argmins, cULR)
-// }
-
-function getMinimumSeam(energy) {
+function getMinimumSeamVertical(energy) {
   const backtrack = nj.zeros(energy.shape);
   const h = energy.shape[0];
   const w = energy.shape[1];
-
-  // idx = np.argmin(M[i - 1, j-1:j + 2])
-  // backtrack[i, j] = idx + j
-  // min_energy = M[i-1, idx + j]
 
   for (let i = 1; i < h; i++) {
     for (let j = 0; j < w; j++) {
@@ -180,6 +171,17 @@ function getMinimumSeam(energy) {
   return nj.array(seam);
 }
 
+function getMinimumSeamHorizontal(energy) {
+  return getMinimumSeamVertical(energy.transpose(1, 0));
+}
+
+function getMinimumSeam(energy, horizontal) {
+  if (horizontal) {
+    return getMinimumSeamHorizontal(energy);
+  }
+  return getMinimumSeamVertical(energy);
+}
+
 // TODO(nwestman): Implement improved seam carving https://github.com/axu2/improved-seam-carving
 
 /**
@@ -187,7 +189,7 @@ function getMinimumSeam(energy) {
  * @param {number} iter - Number of pixels to remove
  * @returns Promise<NdArray[]>
  */
-function removeSeams(img, iter) {
+function removeSeams(img, iter, horizontal = false) {
   return new Promise((resolve, reject) => {
     const seams = [];
     let processing = img.clone();
@@ -201,29 +203,27 @@ function removeSeams(img, iter) {
       }
 
       const energyMap = getEnergy(processing);
-      const seam = getMinimumSeam(energyMap.clone());
+      const seam = getMinimumSeam(energyMap.clone(), horizontal);
       seams.unshift(seam);
 
-      const energyWithSeam = addSeamToMap(energyMap, seam);
+      const energyWithSeam = addSeamToMap(energyMap, seam, horizontal);
       const $energy = document.getElementById("energy");
       $energy.width = energyWithSeam.shape[1];
       $energy.height = energyWithSeam.shape[0];
       nj.images.save(energyWithSeam, $energy);
 
-      const withoutSeam = removeSeamVertical(processing, seam);
-      // const $seam = document.getElementById("seam");
-      // $seam.width = withoutSeam.shape[1];
-      // $seam.height = withoutSeam.shape[0];
-      // nj.images.save(withoutSeam, $seam);
+      const withoutSeam = removeSeam(processing, seam, horizontal);
+      const $seam = document.getElementById("seam");
+      $seam.width = withoutSeam.shape[1];
+      $seam.height = withoutSeam.shape[0];
+      nj.images.save(withoutSeam, $seam);
 
       processing = withoutSeam;
     }, 100);
-
   });
-
 }
 
-function addSeams(img, seams) {
+function addSeams(img, seams, horizontal) {
   const iter = seams.length;
   return new Promise((resolve, reject) => {
     let processing = img;
@@ -237,7 +237,7 @@ function addSeams(img, seams) {
       }
 
       const seam = seams.pop();
-      const withoutSeam = addSeamVertical(processing, seam);
+      const withoutSeam = addSeam(processing, seam, horizontal);
 
       for (const remainingSeam of seams) {
         const diff = nj.clip(remainingSeam.subtract(seam), -1, 0).add(1).multiply(2);
@@ -255,17 +255,8 @@ function addSeams(img, seams) {
 }
 
 function populateImage($image) {
-  var W, H;
-  const size = Math.max($image.height, $image.width);
-  if ($image.width < $image.height) {
-    W = ~~((size * $image.width) / $image.height);
-    H = ~~size;
-  } else {
-    H = ~~((size * $image.height) / $image.width);
-    W = ~~size;
-  }
   var start = new Date().valueOf();
-  // process images
+  // process image
   var img = nj.images.read($image).slice(null, null, [3]);
 
   // display images in canvas
@@ -274,37 +265,15 @@ function populateImage($image) {
   $original.height = img.shape[0];
   nj.images.save(img, $original);
 
-  // const diff = nj.cos(nj.arange(H).multiply(3.14 / 180)).multiply(20);
-  // const verticalSeam = nj
-  //   .ones(H)
-  //   .multiply(W / 2)
-  //   .add(diff);
-  // const withHorizontal = addSeamVertical(img, verticalSeam);
-  // const $horizontalSeam = document.getElementById("horizontalSeam");
-  // $horizontalSeam.width = W + 1;
-  // $horizontalSeam.height = H;
-  // nj.images.save(withHorizontal, $horizontalSeam);
+  const horizontal = true;
 
-  // const diff2 = nj.cos(nj.arange(W).multiply(3.14 / 180)).multiply(20);
-  // const horizontalSeam = nj
-  //   .ones(W)
-  //   .multiply(H / 2)
-  //   .add(diff2);
-  // const withVertical = addSeamHorizontal(img, horizontalSeam);
-  // const $verticalSeam = document.getElementById("verticalSeam");
-  // $verticalSeam.width = W;
-  // $verticalSeam.height = H + 1;
-  // nj.images.save(withVertical, $verticalSeam);
-
-  removeSeams(img, 50).then((seams) => addSeams(img, seams));
+  removeSeams(img, 50, horizontal).then((seams) => addSeams(img, seams, horizontal));
 
   const duration = new Date().valueOf() - start;
   document.getElementById("duration").textContent = "" + duration;
   document.getElementById("h").textContent = "" + img.shape[0];
   document.getElementById("w").textContent = "" + img.shape[1];
 }
-
-
 
 function loadImage(src) {
   var $image = new Image();

@@ -108,7 +108,7 @@ const doEnergyCalculation = cwise({
   },
 });
 
-export function getEnergy(img) {
+export function getEnergy(img, mask) {
   var h = img.shape[0];
   var w = img.shape[1];
   var oShape = [h, w];
@@ -117,6 +117,11 @@ export function getEnergy(img) {
   var g = img.selection.pick(null, null, 1);
   var b = img.selection.pick(null, null, 2);
   doEnergyCalculation(out.selection, r, g, b);
+
+  if (mask) {
+      out = out.add(mask);
+  }
+
   return out;
 }
 
@@ -171,10 +176,11 @@ export function getMinimumSeam(energy, horizontal) {
  * @param {number} iter - Number of pixels to remove
  * @returns Promise<NdArray[]>
  */
-export function removeSeams(img, iter, horizontal = false) {
+export function removeSeams(img, iter, mask = null, horizontal = false) {
   return new Promise((resolve, reject) => {
     const seams = [];
     let processing = img.clone();
+    let processingMask = mask && mask.clone();
     let timesRun = 0;
     let interval = setInterval(function () {
       timesRun += 1;
@@ -184,7 +190,7 @@ export function removeSeams(img, iter, horizontal = false) {
         return;
       }
 
-      const energyMap = getEnergy(processing);
+      const energyMap = getEnergy(processing, processingMask);
       const seam = getMinimumSeam(energyMap.clone(), horizontal);
       seams.unshift(seam);
 
@@ -195,6 +201,11 @@ export function removeSeams(img, iter, horizontal = false) {
       nj.images.save(energyWithSeam, $energy);
 
       const withoutSeam = removeSeam(processing, seam, horizontal);
+      
+      if (processingMask) {
+          processingMask = removeSeam(processingMask, seam, horizontal);
+      }
+
       const $seam = document.getElementById("seam");
       $seam.width = withoutSeam.shape[1];
       $seam.height = withoutSeam.shape[0];

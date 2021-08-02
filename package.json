@@ -1,6 +1,6 @@
 {
   "name": "n2westman.github.io",
-  "homepage": "http://n2westman.com/",
+  "homepage": "http://n2westman.com",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -9,7 +9,7 @@
     "@testing-library/user-event": "^12.1.10",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "react-scripts": "4.0.3",
+    "react-scripts": "^4.0.3",
     "web-vitals": "^1.0.1"
   },
   "scripts": {
